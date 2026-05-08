@@ -2727,4 +2727,689 @@ if err != nil {
 3. **多返回值**：命名返回值能清晰表达每个返回值的含义
 4. **错误处理**：常见模式 `func xxx() (result Type, err error)`
 
+---
+
+## 十二、回调函数
+
+### 什么是回调函数
+
+**回调函数**：函数有一个参数是函数类型，这个函数就是回调函数。
+
+即：将一个函数作为参数传递给另一个函数，由被调用函数在合适的时机去调用它。
+
+### 自定义函数类型
+
+在 Go 中，可以使用 `type` 关键字定义函数类型：
+
+```go
+type FuncType func(int, int) int
+```
+
+### 示例：计算器（回调函数实现）
+
+```go
+type FuncType func(int, int) int
+
+func Add(a, b int) int {
+    return a + b
+}
+
+func Minus(a, b int) int {
+    return a - b
+}
+
+func Mul(a, b int) int {
+    return a * b
+}
+
+// Calc 是回调函数：fTest 参数是函数类型
+func Calc(a, b int, fTest FuncType) (result int) {
+    fmt.Println("Calc")
+    result = fTest(a, b) // 调用传入的函数
+    return
+}
+
+func main() {
+    a := Calc(1, 1, Mul) // 将 Mul 函数作为参数传入
+    fmt.Println("a =", a)
+}
+```
+
+**输出结果：**
+```
+Calc
+a = 1
+```
+
+### 回调函数特点
+
+| 特点 | 说明 |
+|-----|-----|
+| **函数作为参数** | 将函数像普通变量一样传递 |
+| **解耦逻辑** | 调用方与实现方分离 |
+| **灵活扩展** | 传入不同函数，实现不同行为 |
+
+---
+
+## 十三、多态
+
+### 什么是多态
+
+**多态**：多种形态，调用同一个接口，不同的表现，可以实现不同表现（加减乘除）。
+
+Go 语言通过**函数类型**或**接口**实现多态。
+
+### 基于函数类型的多态（回调函数多态）
+
+利用上面的 `Calc` 函数，传入不同的函数实现不同运算：
+
+```go
+type FuncType func(int, int) int
+
+func Add(a, b int) int   { return a + b }
+func Minus(a, b int) int { return a - b }
+func Mul(a, b int) int   { return a * b }
+
+func Calc(a, b int, fTest FuncType) (result int) {
+    fmt.Println("Calc")
+    result = fTest(a, b)
+    return
+}
+
+func main() {
+    // 同一个接口 Calc，传入不同函数，表现不同 —— 多态
+    fmt.Println(Calc(10, 2, Add))   // 加法：12
+    fmt.Println(Calc(10, 2, Minus)) // 减法：8
+    fmt.Println(Calc(10, 2, Mul))   // 乘法：20
+}
+```
+
+**输出结果：**
+```
+Calc
+12
+Calc
+8
+Calc
+20
+```
+
+### 多态核心思想
+
+- **同一接口**：`Calc(a, b int, fTest FuncType)`
+- **不同实现**：`Add`、`Minus`、`Mul` 是同一类型 `FuncType` 的不同实现
+- **灵活调用**：调用方只需要传入符合类型的函数，无需关心内部实现
+
+### 多态与回调函数的关系
+
+| 概念 | 说明 |
+|-----|-----|
+| **回调函数** | 技术手段：将函数作为参数传递 |
+| **多态** | 设计思想：同一接口，不同表现 |
+| **关系** | 回调函数是实现多态的一种方式 |
+
+---
+
+## 十四、闭包
+
+### 什么是闭包
+
+**闭包**：函数的返回值是一个匿名函数（函数类型）。
+
+闭包会捕获外部函数中的变量和常量，**不关心这些捕获的变量和常量是否已经超出了作用域**。只要闭包还在使用它，这些变量就还会存在。
+
+### 示例代码
+
+```go
+// 函数的返回值是一个匿名函数，返回一个函数类型
+func test02() func() int {
+    var x int // 没有初始化，值为 0
+
+    return func() int {
+        x++
+        return x * x
+    }
+}
+
+func main() {
+    // f 接收返回的匿名函数，f 来调用闭包函数
+    // 闭包捕获了 x，只要 f 还在使用，x 就一直存在
+    f := test02()
+    fmt.Println(f()) // 1   x=1, 1*1
+    fmt.Println(f()) // 4   x=2, 2*2
+    fmt.Println(f()) // 9   x=3, 3*3
+    fmt.Println(f()) // 16  x=4, 4*4
+    fmt.Println(f()) // 25  x=5, 5*5
+}
+```
+
+**输出结果：**
+```
+1
+4
+9
+16
+25
+```
+
+### 执行过程分析
+
+| 调用次数 | x 的变化 | 计算 | 结果 |
+|---------|---------|-----|-----|
+| 第 1 次 | 0 → 1   | 1×1 | 1   |
+| 第 2 次 | 1 → 2   | 2×2 | 4   |
+| 第 3 次 | 2 → 3   | 3×3 | 9   |
+| 第 4 次 | 3 → 4   | 4×4 | 16  |
+| 第 5 次 | 4 → 5   | 5×5 | 25  |
+
+### 闭包核心特点
+
+- **捕获外部变量**：匿名函数捕获了外层函数的变量 `x`
+- **变量持久存在**：`x` 不会随 `test02()` 执行结束而销毁，只要闭包 `f` 还在使用，`x` 就一直存在
+- **状态保留**：每次调用 `f()` 时，`x` 在上次的基础上累加，而不是重新初始化
+- **作用域突破**：闭包不关心捕获的变量是否已超出原来的作用域
+
+### 与普通函数对比
+
+```go
+// 普通函数：每次调用 x 重新初始化为 0
+func test01() int {
+    var x int // 函数被调用时，x 才分配空间，初始化为 0
+    x++
+    return x * x
+}
+
+func main() {
+    fmt.Println(test01()) // 每次都是 1
+    fmt.Println(test01()) // 每次都是 1
+}
+```
+
+| 对比项 | 普通函数 | 闭包 |
+|-------|---------|-----|
+| **变量生命周期** | 函数调用结束即销毁 | 与闭包绑定，持续存在 |
+| **状态保留** | 每次调用重新初始化 | 保留上次调用后的状态 |
+| **适用场景** | 无状态计算 | 需要保留状态的场景 |
+
+---
+
+## 十五、defer（延迟执行）
+
+### 什么是 defer
+
+`defer` 用于延迟执行一个函数调用，**在当前函数返回前执行**。常用于资源释放、解锁、关闭文件等收尾工作。
+
+### 执行顺序：先进后出（栈）
+
+多个 `defer` 按**压栈顺序**执行，即**后注册的先执行**（LIFO）。
+
+```go
+func main() {
+    defer fmt.Println("bbb") // 第1个注册
+    defer fmt.Println("aaa") // 第2个注册
+    defer aa(0)               // 第3个注册
+    defer fmt.Println("ccc") // 第4个注册（最后）
+}
+```
+
+**注册顺序（压栈）：** bbb → aaa → aa(0) → ccc
+
+**执行顺序（出栈）：** ccc → aa(0) → aaa → bbb
+
+### defer 遇到 panic
+
+```go
+func aa(a int) {
+    result := 100 / a        // a=0 时触发 panic: integer divide by zero
+    fmt.Println("result", result)
+}
+
+func main() {
+    defer fmt.Println("bbb")
+    defer fmt.Println("aaa")
+    defer aa(0)               // 会触发 panic
+    defer fmt.Println("ccc")
+}
+```
+
+**实际输出：**
+```
+ccc
+aaa
+bbb
+panic: runtime error: integer divide by zero
+```
+
+**关键结论**：`aa(0)` 在执行时触发了 panic，但**其余已注册的 defer（aaa、bbb）仍然继续执行**，最后才抛出 panic 信息。
+
+### defer 执行规则总结
+
+| 规则 | 说明 |
+|-----|-----|
+| **后进先出** | 多个 defer 按注册的逆序执行（栈结构） |
+| **panic 不中断 defer** | 某个 defer 触发 panic，其余已注册的 defer 仍会执行 |
+| **函数返回前执行** | defer 在 `return` 执行后、函数真正返回前触发 |
+| **常见用途** | 关闭文件、释放锁、捕获 panic（配合 recover）|
+
+---
+
+## 十六、获取命令行参数
+
+### 使用 os.Args
+
+通过 `os` 包的 `Args` 变量获取命令行参数，类型为 `[]string`。
+
+```go
+package main
+
+import (
+    "fmt"
+    "os"
+)
+
+func main() {
+    list := os.Args
+    n := len(list)
+    fmt.Println("The number of args:", n)
+
+    for i := 0; i < n; i++ {
+        fmt.Printf("OS Args %d: %s\n", i, list[i])
+    }
+}
+```
+
+### 运行示例
+
+```bash
+go build a.go
+./a hello world 123
+```
+
+**输出：**
+```
+The number of args: 4
+OS Args 0: ./a        # 第0个固定是程序本身的路径
+OS Args 1: hello
+OS Args 2: world
+OS Args 3: 123
+```
+
+### 注意事项
+
+| 说明 | 内容 |
+|-----|-----|
+| **`os.Args[0]`** | 固定是程序本身的路径，不是用户传入的参数 |
+| **用户参数从 `[1]` 开始** | `os.Args[1:]` 才是真正传入的参数 |
+| **macOS/Linux** | `go build a.go` 生成无后缀可执行文件 `a` |
+| **Windows** | `go build a.go` 生成 `a.exe` |
+
+---
+
+## 十七、导入包的方式
+
+Go 支持多种 `import` 写法，满足不同使用场景。
+
+```go
+import (
+    // 第一种：点导入，省略包名直接调用
+    . "fmt"
+
+    // 第二种：起别名
+    o1 "os"
+
+    // 第三种：忽略包（只执行包的 init 函数，不直接使用）
+    _ "fmt"
+)
+
+func main() {
+    Println("hello world") // 点导入后，直接用 Println，无需 fmt.Println
+    o1.Exit(1)             // 别名调用，用 o1 代替 os
+}
+```
+
+### 三种导入方式对比
+
+| 方式 | 语法 | 调用方式 | 说明 |
+|-----|-----|---------|-----|
+| **普通导入** | `"fmt"` | `fmt.Println()` | 最常用，包名作前缀 |
+| **点导入** | `. "fmt"` | `Println()` | 省略包名，直接调用，不推荐（易冲突） |
+| **别名导入** | `o1 "os"` | `o1.Exit()` | 自定义包名，用于包名冲突或简化长包名 |
+| **忽略导入** | `_ "pkg"` | 无法调用 | 只触发包的 `init()` 函数，常用于驱动注册 |
+
+### _ 操作补充说明
+
+有时需要导入一个包，但不需要引用这个包的任何标识符。可以用空白标识符 `_` 来重命名这个导入：
+
+```go
+import (
+    _ "fmt"
+)
+```
+
+**`_` 操作的本质**：引入该包，但不直接使用包里的函数，而是**调用了该包里面的 `init` 函数**。
+
+常见场景：数据库驱动注册
+
+```go
+import (
+    _ "github.com/go-sql-driver/mysql"  // 只需触发 mysql 驱动的 init() 完成注册
+)
+```
+
+---
+
+## 二十一、指针
+
+### 变量的两层含义
+
+每个变量有两层含义：
+- **变量的内存**：存储的值
+- **变量的地址**：变量在内存中的位置（用 `&` 取地址）
+
+### 指针类型
+
+- `*int`：保存 `int` 类型变量的地址
+- `**int`：保存 `*int` 类型的地址（二级指针）
+
+> **声明**是特殊的定义；定义一个变量 `p`，类型为 `*int`
+
+### 示例代码
+
+```go
+func main() {
+    var a int = 10
+    fmt.Printf("a = %d\n", a)   // 变量的值
+    fmt.Printf("&a = %v\n", &a) // 变量的地址
+
+    // 定义指针变量 p，类型为 *int
+    var p *int
+    p = &a  // 指针变量指向谁，就把谁的地址赋值给指针变量
+
+    fmt.Printf("p = %v, &a = %v\n", p, &a) // p 存的就是 a 的地址，二者相同
+
+    *p = 666 // *p 操作的不是 p 的内存，是 p 所指向的内存（就是 a）
+    fmt.Printf("*p = %v, a = %v\n", *p, a) // a 被修改为 666
+}
+```
+
+**输出结果：**
+```
+a = 10
+&a = 0xc000018098   ← a 的地址
+p = 0xc000018098    ← p 存的值就是 a 的地址
+*p = 666, a = 666   ← 通过 *p 修改了 a 的值
+```
+
+### 核心概念
+
+| 操作 | 含义 | 示例 |
+|-----|-----|-----|
+| `&a` | 取变量 a 的地址 | `p = &a` |
+| `var p *int` | 声明指针变量，存 int 地址 | — |
+| `p = &a` | 让指针 p 指向 a | — |
+| `*p` | 解引用，访问 p 指向的内存（即 a） | `*p = 666` |
+
+### 关键结论
+
+- `p` 和 `&a` 的值相同（都是 a 的内存地址）
+- `*p = 666` 修改的是 p **所指向的内存**，即直接修改了 `a` 的值
+- 指针让函数可以**直接修改外部变量**，而不仅仅是操作副本
+
+### 指针的合法指向
+
+指针必须指向合法内存才能解引用，否则会报错：
+
+```go
+var p *int
+p = nil         // 默认值为 nil，没有合法指向
+fmt.Println(p)  // 输出: <nil>
+
+// *p = 666  // err！p 没有合法指向，会触发 panic
+
+var a int
+p = &a   // p 指向 a，现在有了合法指向
+*p = 666 // ✓ 合法操作
+fmt.Println("a =", a) // 666
+```
+
+**结论：** 指针在使用 `*p` 操作前，必须先让它指向一个合法的变量地址。
+
+### new 函数
+
+`new(T)` 为 T 类型的匿名变量分配并清零一块内存空间，返回指向该内存的指针，类型为 `*T`。
+
+```go
+var p1 *int
+p1 = new(int)           // p1 为 *int 类型，指向匿名的 int 变量
+fmt.Println("*p1 =", *p1) // *p1 = 0（自动清零）
+
+p2 := new(int)          // 短变量声明，p2 为 *int 类型
+*p2 = 111
+fmt.Println("*p2 =", *p2) // *p2 = 111
+```
+
+**`new` 的优势：** 无需先声明变量再取地址，直接获得一个合法指针；也无需关心内存的生命周期或释放，Go 的 GC 会自动管理。
+
+| 方式 | 写法 | 说明 |
+|-----|-----|-----|
+| 取已有变量地址 | `p = &a` | 需要先声明变量 `a` |
+| new 分配 | `p = new(int)` | 直接分配匿名内存，更简洁 |
+
+---
+
+## 十八、工程管理（分文件编程）
+
+### 规则
+
+1. 分文件编程（多个源文件），必须放在 `src` 目录下
+2. 设置 `GOPATH` 环境变量指向项目根目录
+3. **同一个目录，包名必须一样**
+4. 用 `go env` 查看 Go 相关的环境路径
+5. **同一个目录，调用别的文件的函数，直接调用即可，无需包名引用**
+
+### 目录结构示例
+
+```
+src/
+├── main.go
+└── test.go
+```
+
+### 代码示例
+
+**main.go**
+```go
+package main  // 必须是 main 包
+
+func main() {
+    test()  // 直接调用同目录 test.go 中的函数，无需包名
+}
+```
+
+**test.go**
+```go
+package main  // 与 main.go 同目录，包名必须一样
+
+import "fmt"
+
+func test() {
+    fmt.Println("this is a test func")
+}
+```
+
+### 运行方式
+
+```bash
+# 运行同目录下所有 .go 文件
+go run .
+
+# 或指定多个文件
+go run main.go test.go
+```
+
+### 关键规则总结
+
+| 规则 | 说明 |
+|-----|-----|
+| **src 目录** | 多文件项目源码放在 src 目录 |
+| **GOPATH** | 设置为项目根目录，`go env` 可查看当前值 |
+| **同目录包名相同** | 同一文件夹下所有 `.go` 文件的 `package` 名必须一致 |
+| **跨文件调用** | 同包内直接调用函数，不需要 `包名.函数名` |
+
+---
+
+## 十九、不同目录包的调用
+
+### 规则
+
+1. **不同目录，包名不一样**（子目录用自己的包名，如 `package calc`）
+2. **调用不同包的函数**，格式：`包名.函数名()`
+3. **函数首字母必须大写才能被外部包调用**；首字母小写为包内私有，外部无法访问
+
+### 目录结构
+
+```
+src/
+├── main.go          → package main
+└── calc/
+    └── calc.go      → package calc
+```
+
+### 代码示例
+
+**src/calc/calc.go**
+```go
+package calc  // 包名与目录名一致（规范）
+
+// 首字母大写 → 可被外部包调用（导出）
+func Add(x, y int) int {
+    return x + y
+}
+
+// 首字母小写 → 仅包内可用（私有）
+func minus(x, y int) int {
+    return x - y
+}
+```
+
+**src/main.go**
+```go
+package main
+
+import (
+    "fmt"
+    "go-learn/src/calc"  // 模块名 + 包路径
+)
+
+func main() {
+    fmt.Println(calc.Add(1, 2))   // ✓ 首字母大写，可以调用
+    // fmt.Println(calc.minus(3,1)) // ✗ 首字母小写，编译报错
+}
+```
+
+### 对比：同目录 vs 不同目录
+
+| 对比项 | 同目录（同包） | 不同目录（不同包） |
+|-------|------------|---------------|
+| **包名** | 必须相同 | 各自独立 |
+| **调用方式** | 直接调用 `func()` | `包名.Func()` |
+| **可见性限制** | 无限制 | 首字母大写才可访问 |
+| **是否需要 import** | 不需要 | 需要 |
+
+---
+
+## 二十、init 函数与包的初始化顺序
+
+### init 函数特点
+
+- 每个包可以定义 `init()` 函数，**自动执行，无需手动调用**
+- 用于包的初始化工作（初始化变量、注册驱动等）
+
+### 包的初始化顺序
+
+每个包内部按以下顺序执行：
+
+```
+const（常量）→ var（变量）→ init()
+```
+
+### 多包导入时的执行流程
+
+根据依赖关系，**被依赖的包先初始化**，最后执行 `main()`：
+
+```
+main
+ └── import pkg1
+       └── import pkg2
+             └── import pkg3
+                   └── pkg3: const → var → init()
+             └── pkg2: const → var → init()
+       └── pkg1: const → var → init()
+ └── main: const → var → init() → main()
+ └── Exit
+```
+
+### 目录结构示例
+
+```
+src/
+├── main.go
+└── test/
+    └── test.go
+```
+
+### 代码示例
+
+**src/test/test.go**
+```go
+package test
+
+import "fmt"
+
+func init() {
+    fmt.Println("test init()")  // 自动执行，早于 main()
+}
+
+func Hello() {
+    fmt.Println("Hello from test pkg")
+}
+```
+
+**src/main.go**
+```go
+package main
+
+import (
+    "fmt"
+    "go-learn/src/test"
+)
+
+func init() {
+    fmt.Println("main init()")
+}
+
+func main() {
+    fmt.Println("main()")
+    test.Hello()
+}
+```
+
+**输出结果：**
+```
+test init()   ← 被依赖的包先执行 init
+main init()   ← 然后执行 main 包的 init
+main()        ← 最后执行 main()
+Hello from test pkg
+```
+
+### 总结
+
+| 执行阶段 | 顺序 | 说明 |
+|---------|-----|-----|
+| **依赖包优先** | 最先 | 最深层依赖的包最先初始化 |
+| **const / var** | 包内最先 | 常量和变量先于 init 初始化 |
+| **init()** | 自动调用 | 无需手动调用，不可被外部调用 |
+| **main()** | 最后 | 所有包初始化完成后才执行 |
+
+
 
