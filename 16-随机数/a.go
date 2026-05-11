@@ -1,0 +1,17 @@
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func main() {
+	// 设置种子，只需要一次
+	// 如果种子参数一样，每次运行程序产生的随机数都一样
+	rand.Seed(time.Now().UnixNano()) //以当前系统时间作为种子参数
+	for i := 0; i < 5; i++ {
+		// fmt.Println(rand.Int()) // 很大的随机数
+		fmt.Println(rand.Intn(100))
+	}
+}

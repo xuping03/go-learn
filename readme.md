@@ -1285,328 +1285,62 @@ func main() {
 
 ---
 
-## 二十、 类型转换的兼容性和限制
+## 二十、 类型转换兼容性
 
-### 类型转换的基本规则
+| 源类型 | 目标类型 | 兼容 | 说明 |
+|--------|---------|:----:|------|
+| int | float | ✓ | 可转换 |
+| float | int | ✓ | 丢失小数部分 |
+| byte/rune | int | ✓ | 得到 ASCII 值 |
+| int | byte/rune | ✓ | 得到对应字符 |
+| bool | 其他 | ✗ | bool 不能与任何类型互转 |
+| string | 其他 | ✗ | 需要 strconv 包 |
 
-Go 语言中，**不同类型之间不能直接进行转换**，必须遵循特定的规则。
-
-#### 能够转换的类型对
-
-**1) bool 类型的转换限制**
-- **bool 类型不能转换为任何其他类型**
-- **任何其他类型也不能转换为 bool**
-
-**示例（错误）：**
-```go
-var flag bool
-flag = true
-// 错误：bool 类型不能转换为 int
-fmt.Printf("flag = %d\n", int(flag))
-```
-
-**2) int 和 float 之间的转换**
-- **int 可以转换为 float**
-- **float 可以转换为 int**（但会丢失小数部分）
-
-**示例（正确）：**
-```go
-var a int = 10
-var b float64 = float64(a)  // int → float64
-fmt.Println(b)  // 输出: 10
-
-var d float64 = 3.14
-var c int = int(d)  // float64 → int，丢失小数部分
-fmt.Println(c)  // 输出: 3
-```
-
-**3) 字符和整数之间的转换**
-- **字符（byte/rune）可以转换为整数**
-- **整数可以转换为字符（byte/rune）**
-
-**示例（正确）：**
-```go
-var ch byte = 'a'
-var t int = int(ch)           // 字符 → 整数，得到 ASCII 值
-fmt.Println("t =", t)         // 输出: 97
-
-var num int = 97
-var newCh byte = byte(num)    // 整数 → 字符
-fmt.Println("newCh =", newCh) // 输出: a
-```
-
-### 类型转换的不兼容情况
-
-#### 1) bool 和其他类型不兼容
-
-**问题代码：**
 ```go
 var flag bool = true
-// 这种不能转换的类型，叫不兼容类型
-t := int(flag)  // 编译错误！bool 不能转换为 int
-```
-
-**错误信息：**
-```
-cannot convert flag (type bool) to type int
-```
-
-**说明：**
-- bool 类型在 Go 中是独立的类型
-- bool 不能用数字 0 或 1 代表
-- 不支持任何形式的 bool 类型转换
-
-#### 2) 整数和 bool 不兼容
-
-**问题代码：**
-```go
-var a int = 1
-// 错误：int 也不能转换为 bool
-var flag bool = bool(a)  // 编译错误！
-```
-
-**说明：**
-- 虽然 0 代表假，非 0 代表真（在某些语言中）
-- 但在 Go 中，这种隐式转换是不允许的
-
-### 兼容性总结表
-
-| 源类型 | 目标类型 | 兼容性 | 说明 |
-|--------|---------|--------|------|
-| **int** | float | ✓ 兼容 | 可以转换，float 可能精度损失 |
-| **float** | int | ✓ 兼容 | 可以转换，int 会丢失小数部分 |
-| **byte/rune** | int | ✓ 兼容 | 可以转换为对应的整数值 |
-| **int** | byte/rune | ✓ 兼容 | 可以转换为字符 |
-| **bool** | 其他类型 | ✗ 不兼容 | bool 不能转换为任何其他类型 |
-| **其他类型** | bool | ✗ 不兼容 | 任何类型都不能转换为 bool |
-| **int** | bool | ✗ 不兼容 | 即使 1 和 0，也不能转换 |
-| **string** | 其他类型 | ✗ 不兼容 | 字符串不能直接强制转换（需要特殊方法） |
-
-### 常见转换场景
-
-#### 场景1：字符转整数（获取 ASCII 值）
-
-```go
-var ch byte = 'a'
-var t int = int(ch)
-fmt.Println("字符 'a' 的 ASCII 值:", t)  // 输出: 97
-```
-
-#### 场景2：整数转字符
-
-```go
-var num int = 97
-var ch byte = byte(num)
-fmt.Println("整数 97 对应的字符:", ch)  // 输出: a
-```
-
-#### 场景3：浮点数转整数（丢失小数）
-
-```go
-var d float64 = 3.14
-var c int = int(d)
-fmt.Println("3.14 转为整数:", c)  // 输出: 3（小数部分丢失）
-```
-
-### 类型转换的注意事项
-
-| 注意事项 | 说明 |
-|---------|------|
-| **精度损失** | float → int 会丢失小数部分 |
-| **范围溢出** | 大数值转换为小类型可能溢出 |
-| **不兼容类型** | bool 与其他类型完全不兼容 |
-| **显式转换** | Go 不支持隐式类型转换，必须显式转换 |
-| **字符串转换** | string 类型需要使用 strconv 包的函数 |
-
-### 类型转换的完整示例
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-    // 示例1：bool 类型（不能转换）
-    var flag bool = true
-    fmt.Printf("flag = %t\n", flag)  // 输出: flag = true
-    // fmt.Printf("flag = %d\n", int(flag))  // 错误！bool 不能转换
-    
-    // 示例2：字符转整数
-    var ch byte = 'a'
-    var t int = int(ch)
-    fmt.Printf("字符 'a' → 整数: %d\n", t)  // 输出: 97
-    
-    // 示例3：整数转字符
-    var num int = 97
-    var newCh byte = byte(num)
-    fmt.Printf("整数 97 → 字符: %c\n", newCh)  // 输出: a
-    
-    // 示例4：float 转 int（丢失小数）
-    var d float64 = 3.14
-    var c int = int(d)
-    fmt.Printf("3.14 → int: %d\n", c)  // 输出: 3
-}
+// int(flag)  // 编译错误！bool 不兼容
 ```
 
 ---
 
 ## 二十一、 自定义类型（Type Definition）
 
-### 什么是自定义类型？
-
-**自定义类型是指用户自己定义的新类型，基于已有的基础类型**
-- 给某个已存在的类型起一个新的别名
-- 增强代码的可读性和语义
-
-### 自定义类型的语法
+用 `type` 关键字基于已有类型创建新类型，增强代码语义和类型安全。
 
 ```go
-type 新类型名 基础类型
-```
+type bigint int64   // 单个定义
 
-#### 语法说明
-
-- **type**：Go 的关键字，用于定义新类型
-- **新类型名**：自定义的类型名称（首字母通常大写）
-- **基础类型**：已存在的类型（int、float64、string 等）
-
-### 自定义类型的使用场景
-
-#### 场景1：给 int64 起个别名
-
-```go
-// 给 int64 起一个别名叫 bigint
-type bigint int64
-
-var a bigint  // 等价于 var a int64
-fmt.Printf("a type is %T\n", a)  // 输出: a type is main.bigint
-```
-
-**说明：**
-- `bigint` 是一个新的类型名
-- 使用 `bigint` 定义的变量在类型检查时被认为是 `bigint` 类型
-- 不能直接赋值给 `int64` 类型的变量（需要显式转换）
-
-#### 场景2：为多个类型定义别名
-
-```go
-type (
+type (              // 批量定义
     long int64
     char byte
 )
 
+var a bigint = 10
 var b long = 11
 var ch char = 'a'
-fmt.Printf("b = %d, ch = %c\n", b, ch)
+fmt.Printf("%T\n", a)  // main.bigint
 ```
 
-### 自定义类型与基础类型的关系
-
-#### 重要区别
-
-虽然自定义类型基于某个基础类型，但它们是**不同的类型**：
+**重要：自定义类型与基础类型是不同类型，不能直接互赋值，需显式转换：**
 
 ```go
 type bigint int64
-
 var a bigint = 10
-var b int64 = 10
-
-// 错误：不能直接赋值，因为类型不同
-// a = b  // 编译错误
-// b = a  // 编译错误
-
-// 需要显式转换
-a = bigint(b)
-b = int64(a)
+var b int64 = 20
+// a = b  // 编译错误！
+a = bigint(b)  // ✓ 显式转换
 ```
 
-### 自定义类型的完整示例
-
+**应用场景：**
 ```go
-package main
-
-import "fmt"
-
-func main() {
-    // 定义单个自定义类型
-    type bigint int64
-    
-    var a bigint
-    fmt.Printf("a type is %T\n", a)  // 输出: a type is main.bigint
-    
-    // 定义多个自定义类型
-    type (
-        long int64
-        char byte
-    )
-    
-    var b long = 11
-    var ch char = 'a'
-    fmt.Printf("b = %d, ch = %c\n", b, ch)  // 输出: b = 11, ch = a
-}
+type UserId int64      // 业务ID区分
+type Temperature float64  // 度量单位区分
+// 避免 userId 和 productId 混用
 ```
 
-### 自定义类型的优势
-
-| 优势 | 说明 |
-|------|------|
-| **可读性** | 给类型起一个有意义的名字，代码更易理解 |
-| **语义清晰** | `bigint` 比 `int64` 更能表达意图 |
-| **类型安全** | 不同的自定义类型之间不能混用 |
-| **代码组织** | 可以为特定业务场景定义专用类型 |
-
-### 自定义类型的应用场景
-
-**场景1：业务概念**
-```go
-type UserId int64
-type ProductId int64
-
-var userId UserId = 123
-var productId ProductId = 456
-// userId 和 productId 是不同的类型，即使都是 int64
-```
-
-**场景2：度量单位**
-```go
-type Temperature float64
-type Distance float64
-
-var temp Temperature = 36.5
-var dist Distance = 100.5
-// 类型不同，无法混用
-```
-
-**场景3：权限值**
-```go
-type Permission int
-
-const (
-    ReadOnly Permission = iota
-    ReadWrite
-    Execute
-)
-```
-
-### 自定义类型 vs 类型别名
-
-| 特性 | 自定义类型 | 类型别名 |
-|------|----------|--------|
-| **语法** | `type Name BaseType` | `type Name = BaseType` |
-| **是否新类型** | 是 | 否 |
-| **类型检查** | 严格不兼容 | 完全兼容 |
-| **使用场景** | 需要类型安全 | 只是起个别名 |
-
-**注意：** 本章重点是自定义类型（第一种），类型别名（第二种）通常在特定场景才使用。
-
-### 自定义类型的常见错误
-
-| 错误 | 原因 | 解决方案 |
-|------|------|---------|
-| **直接赋值** | 自定义类型与基础类型不兼容 | 使用显式类型转换 |
-| **混淆概念** | 把自定义类型当作基础类型 | 记住自定义类型是新类型 |
-| **遗漏 type** | 忘记使用 `type` 关键字 | 确保定义时包含 `type` |
+| 特性 | 自定义类型 `type A B` | 类型别名 `type A = B` |
+|-----|--------------------|--------------------|
+| 是否新类型 | 是，类型严格不兼容 | 否，完全兼容 |
 
 ---
 
@@ -1787,423 +1521,42 @@ default:
 
 ---
 
-## 二十三、 switch 的高级用法
-
-### 1) switch 后面写条件表达式
-
-**switch 后面不一定要写变量，也可以直接写表达式**
-- 这样 case 后面就可以写条件表达式
-- 相当于简化的 if-else 语句
-
-#### 语法
-
-```go
-switch 表达式/变量 {
-case 值1:
-    // 执行代码
-case 值2:
-    // 执行代码
-default:
-    // 默认执行
-}
-```
-
-#### 示例1：没有条件的 switch
-
-```go
-score := 85
-switch {  // 没有条件表达式
-case score > 90:
-    fmt.Println("优秀")
-case score > 80:
-    fmt.Println("良好")  // 会执行这里
-case score > 70:
-    fmt.Println("一般")
-default:
-    fmt.Println("不及格")
-}
-// 输出: 良好
-```
-
-#### 示例2：switch 后面写表达式
-
-```go
-num := 1
-switch num {  // switch 后面写变量本身
-case 1:
-    fmt.Println("按下的是1楼")
-case 2:
-    fmt.Println("按下的是2楼")
-case 3:
-    fmt.Println("按下的是3楼")
-case 4:
-    fmt.Println("按下的是4楼")
-default:
-    fmt.Println("按下的是xxx楼")
-}
-// 输出: 按下的是1楼
-```
-
-### 2) case 后面写条件表达式
-
-**case 后面可以写条件，而不仅仅是值**
-- 当 switch 后面为空（没有表达式）时，case 后面可以写条件判断
-- case 会依次判断条件是否为真
-
-#### 语法
-
-```go
-switch {
-case 条件1:
-    // 如果条件1为真执行
-case 条件2:
-    // 如果条件2为真执行
-default:
-    // 都不满足时执行
-}
-```
-
-#### 完整示例
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-    score := 85
-    
-    // 方法1：switch 后面没有表达式，case 后面写条件
-    switch {
-    case score > 90:
-        fmt.Println("优秀")
-    case score > 80:
-        fmt.Println("良好")  // 会执行
-    case score > 70:
-        fmt.Println("一般")
-    default:
-        fmt.Println("不及格")
-    }
-    
-    // 输出: 良好
-}
-```
-
-### 3) 不同数据类型的 switch
-
-#### 字符串类型的 switch
-
-```go
-var day string = "Monday"
-switch day {
-case "Monday":
-    fmt.Println("星期一")
-case "Tuesday":
-    fmt.Println("星期二")
-case "Wednesday":
-    fmt.Println("星期三")
-default:
-    fmt.Println("其他日期")
-}
-// 输出: 星期一
-```
-
-#### 类型判断的 switch（类型断言）
-
-```go
-var x interface{} = 10
-
-switch v := x.(type) {
-case int:
-    fmt.Println("是整数:", v)
-case string:
-    fmt.Println("是字符串:", v)
-case float64:
-    fmt.Println("是浮点数:", v)
-default:
-    fmt.Println("其他类型")
-}
-// 输出: 是整数: 10
-```
-
-### switch 的执行逻辑总结
-
-#### 不同场景的 switch 执行
-
-| 场景 | switch 表达式 | case 后面 | 说明 |
-|------|-------------|---------|------|
-| **值比较** | 有表达式（变量） | 具体值 | 与各个值依次比较 |
-| **条件判断** | 无表达式 | 条件表达式 | 依次判断条件是否为真 |
-| **多值匹配** | 有表达式 | 多个值用逗号分隔 | 匹配任意一个值 |
-| **类型判断** | interface{} | type 关键字 | 判断具体数据类型 |
-
-### switch 与 if-else 的对比应用
-
-#### 场景1：分数等级（用 switch）
-
-```go
-score := 85
-switch {
-case score >= 90:
-    fmt.Println("A")
-case score >= 80:
-    fmt.Println("B")  // 执行
-case score >= 70:
-    fmt.Println("C")
-default:
-    fmt.Println("F")
-}
-```
-
-#### 场景2：分数等级（用 if-else）
-
-```go
-score := 85
-if score >= 90 {
-    fmt.Println("A")
-} else if score >= 80 {
-    fmt.Println("B")  // 执行
-} else if score >= 70 {
-    fmt.Println("C")
-} else {
-    fmt.Println("F")
-}
-```
-
-**对比：** switch 方式代码更清晰，结构更规范
-
-### switch 的实际应用示例
-
-#### 应用1：根据用户输入返回相应的提示
-
-```go
-var num int
-fmt.Printf("请选择操作（1:新增, 2:删除, 3:修改, 4:查询）: ")
-fmt.Scan(&num)
-
-switch num {
-case 1:
-    fmt.Println("执行新增操作")
-case 2:
-    fmt.Println("执行删除操作")
-case 3:
-    fmt.Println("执行修改操作")
-case 4:
-    fmt.Println("执行查询操作")
-default:
-    fmt.Println("请选择有效的操作")
-}
-```
-
-#### 应用2：成绩判定
-
-```go
-var score int
-fmt.Printf("请输入成绩: ")
-fmt.Scan(&score)
-
-switch {
-case score >= 90:
-    fmt.Println("等级: 优秀")
-case score >= 80:
-    fmt.Println("等级: 良好")
-case score >= 70:
-    fmt.Println("等级: 及格")
-case score >= 60:
-    fmt.Println("等级: 勉强及格")
-default:
-    fmt.Println("等级: 不及格")
-}
-```
-
-### switch 的注意事项
-
-| 注意事项 | 说明 |
-|---------|------|
-| **break 默认存在** | 每个 case 执行后自动退出，无需手动 break |
-| **fallthrough 用法** | 需要穿透到下一个 case 时使用 fallthrough |
-| **表达式类型** | switch 表达式和 case 值的类型必须兼容 |
-| **default 位置** | default 可以在任何位置，不一定在最后 |
-| **switch 嵌套** | 可以在 case 中嵌套另一个 switch |
-
----
-
 ## 二十四、 循环结构 - for 循环
 
-### 什么是 for 循环？
+Go 只有 `for` 循环，没有 `while`，但 for 可以模拟所有循环模式。
 
-**for 循环是一种反复执行某段代码的结构**
-- 用于重复执行相同或相似的代码
-- Go 语言中只有 for 循环，没有 while 循环
-
-### for 循环的三种使用方法
-
-## 方法1：传统的 for 循环（C 风格）
-
-#### 语法
-
-```go
-for 初始化语句; 条件表达式; 迭代语句 {
-    // 循环体
-}
-```
-
-#### 语法说明
-
-- **初始化语句**：循环前执行一次，通常初始化循环变量
-- **条件表达式**：每次循环前检查，为 true 则继续，为 false 则退出
-- **迭代语句**：每次循环体执行后执行，通常用于更新循环变量
-- **循环体**：每次条件为 true 时执行的代码
-
-#### 执行流程
-
-1. 执行初始化语句（只执行一次）
-2. 判断条件表达式
-3. 条件为 true，执行循环体
-4. 执行迭代语句
-5. 回到第 2 步，重复直到条件为 false
-
-#### 示例1：打印 1 到 5
+### 方法1：传统 for（C 风格）
 
 ```go
 for i := 1; i <= 5; i++ {
     fmt.Println(i)
 }
-// 输出:
-// 1
-// 2
-// 3
-// 4
-// 5
-```
 
-#### 示例2：遍历字符串
-
-```go
-str := "abc"
-for i := 0; i < len(str); i++ {
-    fmt.Println(str[i])
-}
-// 输出:
-// 97  (字符 'a' 的 ASCII 值)
-// 98  (字符 'b' 的 ASCII 值)
-// 99  (字符 'c' 的 ASCII 值)
-```
-
-#### 示例3：求和
-
-```go
+// 求和
 sum := 0
 for i := 1; i <= 100; i++ {
     sum += i
 }
-fmt.Println("1 到 100 的和:", sum)
-// 输出: 1 到 100 的和: 5050
+fmt.Println(sum) // 5050
 ```
 
----
-
-## 方法2：range 循环（遍历字符串/数组）
-
-#### 语法
-
-```go
-for 索引, 值 := range 容器 {
-    // 循环体
-}
-```
-
-或者只要索引：
-```go
-for 索引 := range 容器 {
-    // 循环体
-}
-```
-
-或者只要值：
-```go
-for _, 值 := range 容器 {
-    // 循环体
-}
-```
-
-#### 语法说明
-
-- **索引**：当前元素的位置（从 0 开始）
-- **值**：当前元素的值
-- **容器**：要遍历的数据结构（字符串、数组、切片等）
-- **_**：匿名变量，用来忽略不需要的值
-
-#### 示例1：遍历字符串（获取索引和值）
+### 方法2：range 循环
 
 ```go
 str := "abc"
+
+// 获取索引和值
 for i, data := range str {
-    fmt.Println(i, data)
+    fmt.Printf("索引:%d, 字符:%c, ASCII:%d\n", i, data, data)
 }
-// 输出:
-// 0 97  (索引 0，值 'a')
-// 1 98  (索引 1，值 'b')
-// 2 99  (索引 2，值 'c')
-```
 
-**说明：** 注意 `data` 是字符的 Unicode 值（ASCII 码），不是字符本身
-
-#### 示例2：只获取索引
-
-```go
-str := "abc"
-for i := range str {
-    fmt.Println(i)
-}
-// 输出:
-// 0
-// 1
-// 2
-```
-
-#### 示例3：只获取值
-
-```go
-str := "abc"
+// 只用值（忽略索引）
 for _, data := range str {
-    fmt.Printf("%c ", data)
-}
-// 输出: a b c
-```
-
-#### 示例4：打印字符（使用 %c）
-
-```go
-str := "abc"
-for i, data := range str {
-    fmt.Printf("索引:%d, 字符:%c, ASCII值:%d\n", i, data, data)
-}
-// 输出:
-// 索引:0, 字符:a, ASCII值:97
-// 索引:1, 字符:b, ASCII值:98
-// 索引:2, 字符:c, ASCII值:99
-```
-
----
-
-## 方法3：简化的 for 循环（类似 while）
-
-#### 语法
-
-```go
-for 条件表达式 {
-    // 循环体
+    fmt.Printf("%c ", data) // a b c
 }
 ```
 
-#### 说明
-
-- 只有条件，没有初始化和迭代
-- 相当于其他语言的 while 循环
-- 当条件为 false 时退出循环
-
-#### 示例
+### 方法3：类似 while
 
 ```go
 i := 1
@@ -2211,361 +1564,79 @@ for i <= 5 {
     fmt.Println(i)
     i++
 }
-// 输出:
-// 1
-// 2
-// 3
-// 4
-// 5
 ```
 
----
-
-## 方法4：无限循环
-
-#### 语法
+### 方法4：无限循环
 
 ```go
 for {
-    // 循环体
-    // 通常需要 break 语句来退出
+    fmt.Println("循环")
+    break // 用 break 退出
 }
 ```
 
-#### 说明
-
-- 条件表达式为空，始终为 true
-- 必须使用 break 语句才能退出循环
-
-#### 示例
+### 循环控制
 
 ```go
-for {
-    fmt.Println("这是无限循环")
-    break  // 立即退出循环
-}
-// 输出: 这是无限循环
-```
-
----
-
-### 循环控制语句
-
-#### 1) break - 退出循环
-
-```go
+// break：退出循环
 for i := 1; i <= 10; i++ {
-    if i == 5 {
-        break  // 当 i 等于 5 时退出循环
-    }
-    fmt.Println(i)
+    if i == 5 { break }
+    fmt.Println(i) // 1 2 3 4
 }
-// 输出:
-// 1
-// 2
-// 3
-// 4
-```
 
-#### 2) continue - 跳过本次迭代
-
-```go
+// continue：跳过本次
 for i := 1; i <= 5; i++ {
-    if i == 3 {
-        continue  // 跳过 i=3，继续下一次循环
-    }
-    fmt.Println(i)
-}
-// 输出:
-// 1
-// 2
-// 4
-// 5
-```
-
-### for 循环的对比
-
-| 特性 | 传统 for | range | 简化 for | 无限 for |
-|------|---------|-------|---------|----------|
-| **语法** | `for i:=0; i<n; i++` | `for i, v := range x` | `for 条件` | `for` |
-| **用途** | 精确控制循环次数 | 遍历数据结构 | 简单的条件循环 | 需要手动控制 |
-| **循环变量** | 需要声明 | 自动声明 | 需要声明 | 无 |
-| **推荐场景** | 固定次数、索引访问 | 遍历数组/字符串 | 动态条件 | 特殊逻辑 |
-
-### 完整的 for 循环示例
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-    // 方法1：传统 for 循环
-    fmt.Println("方法1：传统 for 循环")
-    str := "abc"
-    for i := 0; i < len(str); i++ {
-        fmt.Printf("索引:%d, ASCII值:%d\n", i, str[i])
-    }
-    
-    // 方法2：range 循环
-    fmt.Println("\n方法2：range 循环")
-    for i, data := range str {
-        fmt.Printf("索引:%d, 字符:%c, ASCII值:%d\n", i, data, data)
-    }
-    
-    // 方法3：简化的 for 循环
-    fmt.Println("\n方法3：简化的 for 循环")
-    i := 1
-    for i <= 3 {
-        fmt.Println(i)
-        i++
-    }
+    if i == 3 { continue }
+    fmt.Println(i) // 1 2 4 5
 }
 ```
 
-### for 循环的最佳实践
-
-| 实践 | 说明 |
-|------|------|
-| **选择合适的方法** | 不同场景选择不同的 for 循环方式 |
-| **避免无限循环** | 确保循环条件最终会变为 false |
-| **合理使用 break** | 用于提前退出循环 |
-| **合理使用 continue** | 用于跳过不需要处理的迭代 |
-| **避免深层嵌套** | 过深的循环嵌套会降低代码可读性 |
+| 方式 | 语法 | 适用场景 |
+|-----|-----|---------|
+| 传统 for | `for i:=0; i<n; i++` | 固定次数、需要索引 |
+| range | `for i, v := range x` | 遍历数组/字符串 |
+| 类 while | `for 条件` | 动态条件 |
+| 无限循环 | `for { }` | 需要手动控制退出 |
 
 ---
 
 ## 二十五、 goto 语句和标签
 
-### 什么是 goto 语句？
-
-**goto 是一种无条件跳转语句**
-- 可以将程序控制流转移到被标签标记的位置
-- 用于跳出复杂的嵌套结构
-- Go 中很少使用（通常被认为是不好的编程习惯）
-
-### goto 语句的基本语法
+`goto` 是无条件跳转语句，实际中很少使用。**优先使用 break/continue 代替。**
 
 ```go
-// 定义标签
-标签名:
-    代码块
-
-// 使用 goto 跳转
-goto 标签名
+fmt.Println("开始")
+goto End          // 跳过中间代码
+fmt.Println("跳过")
+End:
+fmt.Println("结束")
+// 输出: 开始 → 结束
 ```
 
-#### 语法说明
-
-- **标签**：由用户自定义的标识符，后面跟冒号 `:`
-- **goto**：Go 的关键字，用于无条件跳转
-- 标签可以在 goto 前面或后面定义
-
-### goto 语句的执行流程
-
-当执行 `goto 标签名` 时：
-1. 程序会立即跳转到标签所在的位置
-2. 从标签处继续执行代码
-3. 标签之间的代码会被跳过
-
-### goto 语句的使用示例
-
-#### 示例1：简单的 goto 跳转
+**主要用途：跳出嵌套循环**
 
 ```go
-package main
-
-import "fmt"
-
-func main() {
-    fmt.Println("开始")
-    
-    goto End  // 跳转到 End 标签
-    
-    fmt.Println("这行代码会被跳过")
-    fmt.Println("这行代码也会被跳过")
-    
-    End:
-    fmt.Println("跳转到这里了")
-}
-
-// 输出:
-// 开始
-// 跳转到这里了
-```
-
-#### 示例2：在循环中使用 goto
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-    for i := 1; i <= 5; i++ {
-        if i == 3 {
-            goto Skip  // 当 i=3 时跳转
+for i := 0; i < 3; i++ {
+    for j := 0; j < 3; j++ {
+        if i == 1 && j == 1 {
+            goto Exit  // 一次性跳出两层循环
         }
-        fmt.Println(i)
+        fmt.Printf("(%d,%d) ", i, j)
     }
-    
-    Skip:
-    fmt.Println("循环已完成")
 }
-
-// 输出:
-// 1
-// 2
-// 跳转到这里了
+Exit:
+fmt.Println("结束")
+// 输出: (0,0) (0,1) (0,2) (1,0) 结束
 ```
 
-### break 和 continue 的限制
-
-#### 1) break 的限制
-
-- **break 只能在循环或 switch 中使用**
-- break is not in a loop, switch, or select（编译错误）
-- 不能在循环外使用 break
-
-**错误示例：**
-```go
-if true {
-    break  // 编译错误！break 不在循环中
-}
-```
-
-#### 2) continue 的限制
-
-- **continue 只能在循环中使用**
-- continue is not in a loop（编译错误）
-- 不能在 switch 或循环外使用 continue
-
-**错误示例：**
-```go
-switch x {
-case 1:
-    continue  // 编译错误！continue 不在循环中
-}
-```
-
-### goto vs break/continue
-
-| 特性 | goto | break | continue |
-|------|------|-------|----------|
-| **用途** | 无条件跳转到标签位置 | 退出循环或 switch | 跳过本次迭代 |
-| **使用位置** | 任何地方 | 只在循环或 switch 中 | 只在循环中 |
-| **跳转范围** | 无限制 | 只能退出当前循环 | 只能跳过当前迭代 |
-| **代码可读性** | 差（容易造成混乱） | 好 | 好 |
-| **推荐使用** | 少用 | 常用 | 常用 |
-
-### goto 的应用场景
-
-#### 场景1：跳出嵌套循环
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-    for i := 0; i < 3; i++ {
-        for j := 0; j < 3; j++ {
-            if i == 1 && j == 1 {
-                goto Exit  // 一次性跳出两层循环
-            }
-            fmt.Printf("(%d, %d) ", i, j)
-        }
-    }
-    
-    Exit:
-    fmt.Println("\n循环结束")
-}
-
-// 输出:
-// (0, 0) (0, 1) (0, 2) (1, 0) 
-// 循环结束
-```
-
-**对比：** 用 break 和 continue 实现相同的功能会更复杂
-
-#### 场景2：错误处理中的跳转
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-    // 模拟错误处理流程
-    value := -5
-    
-    if value < 0 {
-        fmt.Println("错误：值不能为负数")
-        goto ErrorHandler
-    }
-    
-    fmt.Println("处理正常数据")
-    
-    ErrorHandler:
-    fmt.Println("执行错误处理逻辑")
-}
-
-// 输出:
-// 错误：值不能为负数
-// 执行错误处理逻辑
-```
-
-### 完整的 goto 示例
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-    // break 和 continue 的限制
-    // break 只能在循环或 switch 中
-    // continue 只能在循环中
-    
-    // goto 可以在任何地方，但不能穿函数使用
-    fmt.Println("111111111111111")
-    
-    goto End  // goto 是关键字，End 是标签（用户起的名字）
-    
-    fmt.Println("222222222222222")
-    
-    End:
-    fmt.Println("333333333333333")
-}
-
-// 输出:
-// 111111111111111
-// 333333333333333
-```
-
-### goto 的注意事项
-
-| 注意事项 | 说明 |
-|---------|------|
-| **避免过度使用** | goto 会使代码流程难以理解，一般避免使用 |
-| **不能跨函数** | goto 只能在同一函数内跳转，不能跳转到其他函数 |
-| **标签命名** | 标签名应该有意义，便于理解跳转的目的 |
-| **代码可读性** | 使用 goto 会降低代码可读性，优先使用 break/continue |
-| **特殊场景** | 仅在复杂的嵌套循环中才考虑使用 |
-
-### Go 编程建议
-
-**虽然 Go 支持 goto，但强烈建议：**
-1. 尽量避免使用 goto
-2. 使用 break 和 continue 来控制循环流程
-3. 使用函数调用来组织代码逻辑
-4. 使用 if-else 来处理条件分支
-
-**总结：** goto 是一个"危险的"工具，虽然存在但不推荐在日常编程中使用。
+| 规则 | 说明 |
+|-----|-----|
+| **不能跨函数** | 只能在同一函数内跳转 |
+| **break/continue 优先** | 可以用 break/continue 解决的不用 goto |
 
 ---
 
-## 十、函数传参
+## 二十六、函数传参
 
 ### 基本概念
 
@@ -2599,137 +1670,42 @@ func main() {
 
 ---
 
-## 十一、函数返回值
+## 二十七、函数返回值
 
-### 基本概念
-
-Go语言的函数可以返回一个或多个值，支持三种返回值写法。
-
-### 三种返回值写法
-
-#### 1. 直接返回
+Go 函数支持三种返回值写法和多返回值。
 
 ```go
-// 直接返回
-func myFun4(a int) int {
-	return a + 1
-}
-```
+// 1. 直接返回
+func f1(a int) int { return a + 1 }
 
-**特点：**
-- 最简洁的写法
-- 只声明返回值类型
-- 在return语句中直接返回表达式结果
-
-#### 2. 传统写法
-
-```go
-// 传统写法
-func myFun5(a int) (result int) {
-	return a + 1
-}
-```
-
-**特点：**
-- 声明了返回值变量名 `result`
-- 仍然使用 `return` 返回具体值
-- 返回值变量名可用于文档说明
-
-#### 3. 推荐写法（命名返回值）
-
-```go
-// 推荐写法
-func myFun6(a int) (result int) {
-	result = a + 1
-	return
-}
-```
-
-**特点：**
-- 声明了返回值变量名 `result`
-- 直接对返回值变量赋值
-- `return` 语句不需要指定返回值（自动返回命名变量）
-- 代码更清晰，适合复杂函数
-
-### 多返回值
-
-Go语言支持函数返回多个值，这是Go的一个重要特性。
-
-#### 示例代码
-
-```go
-func myFun7() (a , b , c int) {
-	a, b, c = 11, 22, 33
-	return
+// 2. 命名返回值（推荐）
+func f2(a int) (result int) {
+    result = a + 1
+    return  // 自动返回 result
 }
 
-func main() {
-	a, b, c := myFun7()
-	fmt.Println(a, b, c)
+// 3. 多返回值（常用于错误处理）
+func divide(a, b int) (int, error) {
+    if b == 0 { return 0, errors.New("division by zero") }
+    return a / b, nil
 }
-```
 
-**输出结果：**
-```
-11 22 33
-```
-
-#### 多返回值说明
-
-| 组成部分 | 说明 |
-|---------|-----|
-| **返回值声明** | `(a int, b int, c int)` - 声明三个返回值 |
-| **变量赋值** | `a, b, c = 11, 22, 33` - 同时赋值多个变量 |
-| **空return** | `return` - 自动返回所有命名返回值 |
-| **接收返回值** | `a, b, c := myFun7()` - 使用多重赋值接收 |
-
-#### 多返回值特点
-
-- **命名返回值**：每个返回值都有明确的变量名
-- **同时赋值**：可以一次性为所有返回值赋值
-- **简化return**：使用空return语句自动返回所有命名变量
-- **调用接收**：调用时必须接收所有返回值（或使用 `_` 忽略）
-
-#### 常见应用场景
-
-```go
-// 错误处理模式
-func divide(a, b int) (result int, err error) {
-    if b == 0 {
-        return 0, errors.New("division by zero")
-    }
-    result = a / b
+// 多命名返回值
+func f3() (a, b, c int) {
+    a, b, c = 11, 22, 33
     return
 }
-
-// 多值返回
-result, err := divide(10, 2)
-if err != nil {
-    fmt.Println("Error:", err)
-} else {
-    fmt.Println("Result:", result)
-}
 ```
 
-### 返回值方式对比
-
-| 写法 | 声明返回值名 | return语句 | 适用场景 |
-|-----|------------|-----------|---------|
-| **直接返回** | 否 | `return 表达式` | 简单函数，单行计算 |
-| **传统写法** | 是 | `return 表达式` | 需要返回值说明的场景 |
-| **命名返回** | 是 | `return` (空) | 复杂逻辑，多处赋值 |
-| **多返回值** | 是 | `return` (空) | 返回多个值，错误处理 |
-
-### 使用建议
-
-1. **简单函数**：使用直接返回方式
-2. **复杂逻辑**：使用命名返回值，代码更易读
-3. **多返回值**：命名返回值能清晰表达每个返回值的含义
-4. **错误处理**：常见模式 `func xxx() (result Type, err error)`
+| 写法 | return 语句 | 适用场景 |
+|-----|-----------|---------|
+| 直接返回 | `return 表达式` | 简单函数 |
+| 命名返回 | `return`（空） | 复杂逻辑，多处赋值 |
+| 多返回值 | `return v1, v2` | 返回结果+错误 |
 
 ---
 
-## 十二、回调函数
+## 二十八、回调函数
 
 ### 什么是回调函数
 
@@ -2791,7 +1767,7 @@ a = 1
 
 ---
 
-## 十三、多态
+## 二十九、多态
 
 ### 什么是多态
 
@@ -2850,7 +1826,7 @@ Calc
 
 ---
 
-## 十四、闭包
+## 三十、闭包
 
 ### 什么是闭包
 
@@ -2933,7 +1909,7 @@ func main() {
 
 ---
 
-## 十五、defer（延迟执行）
+## 三十一、defer（延迟执行）
 
 ### 什么是 defer
 
@@ -2993,7 +1969,7 @@ panic: runtime error: integer divide by zero
 
 ---
 
-## 十六、获取命令行参数
+## 三十二、获取命令行参数
 
 ### 使用 os.Args
 
@@ -3045,7 +2021,7 @@ OS Args 3: 123
 
 ---
 
-## 十七、导入包的方式
+## 三十三、导入包的方式
 
 Go 支持多种 `import` 写法，满足不同使用场景。
 
@@ -3098,106 +2074,7 @@ import (
 
 ---
 
-## 二十一、指针
-
-### 变量的两层含义
-
-每个变量有两层含义：
-- **变量的内存**：存储的值
-- **变量的地址**：变量在内存中的位置（用 `&` 取地址）
-
-### 指针类型
-
-- `*int`：保存 `int` 类型变量的地址
-- `**int`：保存 `*int` 类型的地址（二级指针）
-
-> **声明**是特殊的定义；定义一个变量 `p`，类型为 `*int`
-
-### 示例代码
-
-```go
-func main() {
-    var a int = 10
-    fmt.Printf("a = %d\n", a)   // 变量的值
-    fmt.Printf("&a = %v\n", &a) // 变量的地址
-
-    // 定义指针变量 p，类型为 *int
-    var p *int
-    p = &a  // 指针变量指向谁，就把谁的地址赋值给指针变量
-
-    fmt.Printf("p = %v, &a = %v\n", p, &a) // p 存的就是 a 的地址，二者相同
-
-    *p = 666 // *p 操作的不是 p 的内存，是 p 所指向的内存（就是 a）
-    fmt.Printf("*p = %v, a = %v\n", *p, a) // a 被修改为 666
-}
-```
-
-**输出结果：**
-```
-a = 10
-&a = 0xc000018098   ← a 的地址
-p = 0xc000018098    ← p 存的值就是 a 的地址
-*p = 666, a = 666   ← 通过 *p 修改了 a 的值
-```
-
-### 核心概念
-
-| 操作 | 含义 | 示例 |
-|-----|-----|-----|
-| `&a` | 取变量 a 的地址 | `p = &a` |
-| `var p *int` | 声明指针变量，存 int 地址 | — |
-| `p = &a` | 让指针 p 指向 a | — |
-| `*p` | 解引用，访问 p 指向的内存（即 a） | `*p = 666` |
-
-### 关键结论
-
-- `p` 和 `&a` 的值相同（都是 a 的内存地址）
-- `*p = 666` 修改的是 p **所指向的内存**，即直接修改了 `a` 的值
-- 指针让函数可以**直接修改外部变量**，而不仅仅是操作副本
-
-### 指针的合法指向
-
-指针必须指向合法内存才能解引用，否则会报错：
-
-```go
-var p *int
-p = nil         // 默认值为 nil，没有合法指向
-fmt.Println(p)  // 输出: <nil>
-
-// *p = 666  // err！p 没有合法指向，会触发 panic
-
-var a int
-p = &a   // p 指向 a，现在有了合法指向
-*p = 666 // ✓ 合法操作
-fmt.Println("a =", a) // 666
-```
-
-**结论：** 指针在使用 `*p` 操作前，必须先让它指向一个合法的变量地址。
-
-### new 函数
-
-`new(T)` 为 T 类型的匿名变量分配并清零一块内存空间，返回指向该内存的指针，类型为 `*T`。
-
-```go
-var p1 *int
-p1 = new(int)           // p1 为 *int 类型，指向匿名的 int 变量
-fmt.Println("*p1 =", *p1) // *p1 = 0（自动清零）
-
-p2 := new(int)          // 短变量声明，p2 为 *int 类型
-*p2 = 111
-fmt.Println("*p2 =", *p2) // *p2 = 111
-```
-
-**`new` 的优势：** 无需先声明变量再取地址，直接获得一个合法指针；也无需关心内存的生命周期或释放，Go 的 GC 会自动管理。
-
-| 方式 | 写法 | 说明 |
-|-----|-----|-----|
-| 取已有变量地址 | `p = &a` | 需要先声明变量 `a` |
-| new 分配 | `p = new(int)` | 直接分配匿名内存，更简洁 |
-
----
-
-## 十八、工程管理（分文件编程）
+## 三十四、工程管理（分文件编程）
 
 ### 规则
 
@@ -3258,7 +2135,7 @@ go run main.go test.go
 
 ---
 
-## 十九、不同目录包的调用
+## 三十五、不同目录包的调用
 
 ### 规则
 
@@ -3318,7 +2195,7 @@ func main() {
 
 ---
 
-## 二十、init 函数与包的初始化顺序
+## 三十六、init 函数与包的初始化顺序
 
 ### init 函数特点
 
@@ -3410,6 +2287,366 @@ Hello from test pkg
 | **const / var** | 包内最先 | 常量和变量先于 init 初始化 |
 | **init()** | 自动调用 | 无需手动调用，不可被外部调用 |
 | **main()** | 最后 | 所有包初始化完成后才执行 |
+
+---
+
+## 三十七、指针
+
+### 变量的两层含义
+
+每个变量有两层含义：
+- **变量的内存**：存储的值
+- **变量的地址**：变量在内存中的位置（用 `&` 取地址）
+
+### 指针类型
+
+- `*int`：保存 `int` 类型变量的地址
+- `**int`：保存 `*int` 类型的地址（二级指针）
+
+### 示例代码
+
+```go
+func main() {
+    var a int = 10
+    fmt.Printf("a = %d\n", a)   // 变量的值
+    fmt.Printf("&a = %v\n", &a) // 变量的地址
+
+    var p *int
+    p = &a  // 指针变量指向谁，就把谁的地址赋值给指针变量
+
+    fmt.Printf("p = %v, &a = %v\n", p, &a)
+    *p = 666 // *p 操作的不是 p 的内存，是 p 所指向的内存（就是 a）
+    fmt.Printf("*p = %v, a = %v\n", *p, a)
+}
+```
+
+**输出结果：**
+```
+a = 10
+&a = 0xc000018098
+p = 0xc000018098    ← p 存的值就是 a 的地址
+*p = 666, a = 666   ← 通过 *p 修改了 a 的值
+```
+
+### 核心操作
+
+| 操作 | 含义 | 示例 |
+|-----|-----|-----|
+| `&a` | 取变量 a 的地址 | `p = &a` |
+| `var p *int` | 声明指针变量，存 int 地址 | — |
+| `p = &a` | 让指针 p 指向 a | — |
+| `*p` | 解引用，访问 p 指向的内存（即 a） | `*p = 666` |
+
+### 合法指向
+
+指针使用前必须指向合法内存，否则触发 panic：
+
+```go
+var p *int
+p = nil       // 默认 nil，没有合法指向
+// *p = 666  // err！触发 panic
+
+var a int
+p = &a        // 有了合法指向
+*p = 666      // ✓
+```
+
+### new 函数
+
+`new(T)` 分配匿名内存并清零，返回 `*T`，无需手动管理生命周期：
+
+```go
+p1 := new(int)   // p1 为 *int，初始值为 0
+*p1 = 111
+```
+
+| 方式 | 写法 | 说明 |
+|-----|-----|-----|
+| 取已有变量地址 | `p = &a` | 需要先声明变量 `a` |
+| new 分配 | `p = new(int)` | 直接分配匿名内存，更简洁 |
+
+---
+
+## 三十八、数组
+
+### 定义数组
+
+```go
+var a [10]int  // 长度为 10 的 int 数组
+var b [5]int   // 长度为 5 的 int 数组
+```
+
+> `[10]int` 和 `[5]int` 是**不同类型**，数组长度是类型的一部分。
+
+### 注意事项
+
+```go
+// n := 10
+// var c [n]int  // err: non-constant array bound n
+```
+
+数组长度必须是**常量**，不能是变量。
+
+### 操作数组元素
+
+下标从 `0` 开始，到 `len()-1` 结束，可以是变量或常量：
+
+```go
+a[0] = 1    // 常量下标
+i := 1
+a[i] = 2    // 变量下标，a[1] = 2
+```
+
+### 遍历赋值与打印
+
+```go
+for i := 0; i < len(a); i++ {
+    a[i] = i + 1
+}
+for i := 0; i < len(a); i++ {
+    fmt.Printf("a[%d] = %d\n", i, a[i])
+}
+```
+
+### 数组特点总结
+
+| 特点 | 说明 |
+|-----|-----|
+| **长度固定** | 定义后长度不可变 |
+| **长度是类型的一部分** | `[10]int` 与 `[5]int` 不同类型，不可互相赋值 |
+| **下标从 0 开始** | 有效范围 `0 ~ len()-1`，越界会 panic |
+| **长度必须是常量** | 不能用变量作为数组长度 |
+| **len() 获取长度** | `len(a)` 返回数组元素个数 |
+
+### 数组初始化方式
+
+```go
+// 完整初始化
+var a [5]int = [5]int{1, 2, 3, 4, 5}
+
+// 短变量声明
+b := [5]int{6, 7, 8, 9, 10}
+
+// 切片（不固定长度，区别于数组）
+c := []int{1, 2, 3, 4, 5}
+
+// 部分初始化，未指定的元素默认为 0
+d := [5]int{1, 2, 3}  // [1 2 3 0 0]
+```
+
+### 二维数组
+
+```go
+// [行数][列数]类型
+e := [3][4]int{1: {5, 6, 7, 8}}
+fmt.Println("e=", e)
+// 输出: e= [[0 0 0 0] [5 6 7 8] [0 0 0 0]]
+```
+
+- `[3][4]int`：3 行 4 列的二维数组
+- `{1: {5, 6, 7, 8}}`：只初始化第 1 行（下标从 0 开始），其余行默认为 0
+- 未初始化的行自动填充零值
+
+### 数组的比较与赋值
+
+```go
+a := [5]int{1, 2, 3, 4, 5}
+b := [5]int{1, 2, 3, 4, 5}
+c := [5]int{1, 2, 3}
+
+fmt.Println("a == b", a == b) // true，每个元素都相同
+fmt.Println("a == c", a == c) // false，元素不同
+
+// 同类型的数组可以直接赋值
+var d [5]int
+d = a
+fmt.Println("d =", d) // [1 2 3 4 5]
+```
+
+**规则：**
+- 数组只支持 `==` 和 `!=` 比较，比较的是**每个元素是否都相同**
+- 参与比较的两个数组**类型必须一样**（长度+元素类型均相同）
+- 同类型数组之间可以直接赋值（值拷贝）
+
+### 数组作为函数参数（值传递）
+
+数组作为参数传递给函数时，是**值传递**，函数内修改不影响原数组：
+
+```go
+func modify(a [5]int) {
+    a[1] = 100  // 修改的是副本
+}
+
+func main() {
+    a := [5]int{1, 2, 3, 4, 5}
+    modify(a)
+    fmt.Println(a) // [1 2 3 4 5]，原数组不变
+}
+```
+
+> 若需要在函数内修改原数组，应传递**指针** `*[5]int` 或使用**切片**。
+
+---
+
+## 四十、切片（Slice）
+
+切片是对数组的引用，**长度可变**，比数组更灵活。
+
+### 从数组创建切片
+
+语法：`array[low:high:max]`
+
+- `low`：起始下标（包含）
+- `high`：结束下标（不包含）
+- `max`：容量上限下标（可省略）
+- **len**（长度）= `high - low`
+- **cap**（容量）= `max - low`
+
+```go
+a := [5]int{1, 2, 3, 4, 5}
+b := a[0:3:5]
+
+fmt.Println("b len", len(b)) // 3  （0~2，共3个元素）
+fmt.Println("b cap", cap(b)) // 5  （容量从0到max=5）
+fmt.Println(b)               // [1 2 3]
+```
+
+### 切片截取方式
+
+| 操作 | 含义 |
+|-----|-----|
+| `s[n]` | 索引位置为 n 的元素 |
+| `s[:]` | 从 0 到 len(s)-1，等同于完整切片 |
+| `s[low:]` | 从 low 到 len(s)-1 |
+| `s[:high]` | 从 0 到 high，len=high |
+| `s[low:high]` | 从 low 到 high，len=high-low |
+| `s[low:high:max]` | 从 low 到 high，len=high-low，cap=max-low |
+| `len(s)` | 切片长度，总是 <= cap(s) |
+| `cap(s)` | 切片容量，总是 >= len(s) |
+
+### make 创建切片
+
+```go
+s1 := make([]int, 5, 10)   // len=5, cap=10，元素初始化为0
+fmt.Println(s1)             // [0 0 0 0 0]
+s1 = append(s1, 11)        // 追加元素
+fmt.Println(s1)             // [0 0 0 0 0 11]，len变为6
+```
+
+### append 扩容规则
+
+当 `append` 追加元素导致 len 超过 cap 时，Go 会自动扩容，**新 cap = 旧 cap × 2**：
+
+```go
+var s []int
+for i := 0; i < 10; i++ {
+    s = append(s, i)
+    fmt.Printf("len=%d cap=%d\n", len(s), cap(s))
+}
+// len=1  cap=1
+// len=2  cap=2
+// len=3  cap=4   ← cap不够，扩容为2倍
+// len=4  cap=4
+// len=5  cap=8   ← cap不够，扩容为2倍
+// len=6  cap=8
+// len=7  cap=8
+// len=8  cap=8
+// len=9  cap=16  ← cap不够，扩容为2倍
+// len=10 cap=16
+```
+
+**注意：** 扩容时会分配新的底层数组，`append` 返回的切片与原切片**不再共享**底层数组，所以必须用返回值 `s = append(s, ...)`。
+
+### copy 用法
+
+`copy(dst, src)` 将 src 的元素复制到 dst，**复制数量 = min(len(dst), len(src))**，两个切片底层数组独立互不影响：
+
+```go
+a := []int{1, 2}
+b := []int{6, 6, 6, 6, 6}
+copy(b, a)
+fmt.Println(b) // [1 2 6 6 6]  ← 只覆盖了前2个，a只有2个元素
+```
+
+| 对比 | 说明 |
+|-----|-----|
+| `b = a` | b 和 a 共享底层数组，修改互相影响 |
+| `copy(b, a)` | 独立拷贝，修改互不影响 |
+
+### 从切片生成切片 & 底层数组关系
+
+**所有切片共享同一底层数组**，从切片再切片时，下标仍基于底层数组偏移：
+
+```go
+a := [9]int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+s3 := a[2:5]      // s3 = [3 4 5]，len=3，cap=7（底层数组从a[2]开始还有7个）
+fmt.Println(s3[1]) // 4（s3的第1个元素，即a[3]）
+
+s4 := s3[2:7]     // 从s3底层偏移继续截取，s4 = a[4:9] = [5 6 7 8 9]
+fmt.Println(s4)    // [5 6 7 8 9]
+```
+
+底层数组示意图：
+
+```
+index:  0  1  2  3  4  5  6  7  8
+  a:  [ 1  2  3  4  5  6  7  8  9 ]
+              |--s3--|
+                        |----s4----|
+```
+
+**关键规则：**
+- 切片不拥有数据，只是底层数组的一个视图
+- 修改切片元素会影响底层数组（及所有共享该数组的切片）
+- `s3[2:7]` 的 high=7 是相对于 **s3 的底层数组起点**（a[2]），即 a[2+2 : 2+7] = a[4:9]
+
+### 切片与数组的区别
+
+| 对比 | 数组 | 切片 |
+|-----|-----|-----|
+| **长度** | 固定，类型的一部分 | 可变 |
+| **传参** | 值传递（拷贝） | 引用传递（共享底层数组） |
+| **声明** | `[5]int` | `[]int` 或 `a[0:3]` |
+
+---
+
+## 三十九、随机数
+
+### 使用 math/rand 包
+
+```go
+import (
+    "fmt"
+    "math/rand"
+    "time"
+)
+
+func main() {
+    // 设置种子，只需设置一次
+    // 如果种子参数一样，每次运行产生的随机数都一样
+    rand.Seed(time.Now().UnixNano()) // 以当前时间纳秒作为种子，保证每次不同
+
+    for i := 0; i < 5; i++ {
+        // fmt.Println(rand.Int())      // 很大的随机数
+        fmt.Println(rand.Intn(100))  // [0, 100) 范围内的随机整数
+    }
+}
+```
+
+### 常用函数
+
+| 函数 | 说明 |
+|-----|-----|
+| `rand.Seed(n)` | 设置随机种子，程序启动时调用一次 |
+| `rand.Int()` | 生成一个很大的非负随机整数 |
+| `rand.Intn(n)` | 生成 `[0, n)` 范围内的随机整数 |
+
+### 关键点
+
+- **种子相同 → 随机数序列相同**：不设置种子或种子固定，每次运行结果一样
+- **推荐种子**：`time.Now().UnixNano()`，以纳秒时间戳保证每次运行不同
+- `rand.Intn(100)` 生成 0~99 的随机数（不含100）
 
 
 
