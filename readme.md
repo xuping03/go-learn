@@ -2573,6 +2573,249 @@ fmt.Println(b) // [1 2 6 6 6]  ← 只覆盖了前2个，a只有2个元素
 | `b = a` | b 和 a 共享底层数组，修改互相影响 |
 | `copy(b, a)` | 独立拷贝，修改互不影响 |
 
+---
+
+## 四十一、map
+
+map 是键值对集合，key 和 value 类型各自指定。
+
+### 声明与初始化
+
+```go
+// 方式1：声明（nil map，不能直接赋值）
+var m1 map[int]string
+fmt.Println(m1) // map[]
+
+// 方式2：make 创建
+m2 := make(map[int]string)
+
+// 方式3：make 指定初始容量（可超过，会自动扩容）
+m3 := make(map[int]string, 2)
+m3[1] = "a"
+m3[2] = "b"
+m3[3] = "c"
+```
+
+### 遍历
+
+```go
+for key, value := range m3 {
+    fmt.Printf("%d====>%s\n", key, value)
+}
+// map 是无序的，每次遍历顺序可能不同
+```
+
+### 判断 key 是否存在
+
+```go
+value, ok := m3[1]
+if ok {
+    fmt.Println("存在:", value)
+} else {
+    fmt.Println("不存在")
+}
+```
+
+### 删除元素
+
+```go
+delete(m3, 1) // 删除 key=1 的元素
+```
+
+### map 是引用传递
+
+map 作为函数参数时是**引用传递**，函数内修改会影响原 map：
+
+```go
+func test(m map[int]string) {
+    delete(m, 1) // 删除的是原 map 的数据
+}
+
+test(m3)
+fmt.Println(m3) // key=1 已被删除
+```
+
+> 与数组（值传递）不同，map 传参后共享同一份数据。
+
+### 常用操作总结
+
+| 操作 | 写法 |
+|-----|-----|
+| 创建 | `make(map[K]V)` |
+| 赋值 | `m[key] = value` |
+| 取值 | `v := m[key]` |
+| 判断存在 | `v, ok := m[key]` |
+| 删除 | `delete(m, key)` |
+| 遍历 | `for k, v := range m` |
+
+---
+
+## 四十二、结构体
+
+结构体是将多个不同类型的字段组合成一个自定义类型。
+
+### 定义与初始化
+
+```go
+type Student struct {
+    id   int
+    name string
+    sex  byte
+    age  int
+    addr string
+}
+
+// 顺序初始化（需按字段顺序）
+s1 := Student{1, "xiaoming", 'm', 18, "bj"}
+
+// 指定字段初始化（未指定字段自动为零值）
+s2 := Student{name: "xiaohong", addr: "sh"}
+```
+
+### 结构体指针
+
+```go
+// 方式1：取地址
+p1 := &Student{name: "mike", addr: "sh"}
+
+// 方式2：先声明再取地址
+var s Student
+var p *Student = &s
+p.id = 1          // p.id 与 (*p).id 完全等价
+(*p).name = "mike"
+
+// 方式3：new
+p3 := new(Student)
+p3.id = 1
+p3.name = "linux"
+```
+
+### 可见性规则
+
+- 字段名**首字母大写**：可被其他包访问（导出）
+- 字段名**首字母小写**：仅限同一包内访问
+
+---
+
+## 四十三、匿名字段（结构体嵌套）
+
+匿名字段：只写类型名，不写字段名，实现结构体的组合复用。
+
+```go
+type Person struct {
+    name string
+    age  int
+}
+
+type Student struct {
+    Person        // 匿名字段，嵌入 Person
+    school string
+    id     int
+}
+
+// 自定义类型也可作为匿名字段
+type mystr string
+type Student2 struct {
+    Person
+    int
+    mystr
+}
+```
+
+### 初始化与访问
+
+```go
+s1 := Student{Person{"mike", 20}, "qinghua", 123}
+fmt.Println(s1)
+
+// %+v 显示字段名
+fmt.Printf("%+v\n", s1) // {Person:{name:mike age:20} school:qinghua id:123}
+
+// 指定字段初始化
+s3 := Student{id: 1}
+s4 := Student{Person: Person{name: "mike"}}
+
+// 访问匿名字段的成员（直接访问，无需 s.Person.name）
+fmt.Println(s1.name) // mike
+fmt.Println(s1.Person.name) // 等价写法
+```
+
+---
+
+## 四十四、面向过程 vs 面向对象函数
+
+Go 通过**为类型添加方法**实现面向对象风格。
+
+```go
+// 面向过程：普通函数
+func add1(a, b int) int {
+    return a + b
+}
+
+// 面向对象：为类型绑定方法
+type long int
+
+func (tmp long) Add2(other long) long {
+    return tmp + other
+}
+
+func main() {
+    // 过程式调用
+    result := add1(1, 2)
+
+    // 对象式调用
+    var n long = 2
+    r := n.Add2(1) // n 作为接收者
+}
+```
+
+**区别：** 方法有接收者 `(tmp long)`，将函数与类型绑定，通过 `变量.方法名()` 调用。
+
+---
+
+## 四十五、为结构体添加方法
+
+### 值接收者（不修改原数据）
+
+```go
+func (tmp Person) PrintInfo() {
+    fmt.Println(tmp)
+}
+```
+
+### 指针接收者（修改原数据）
+
+```go
+func (p *Person) SetInfo(n string, s byte, a int) {
+    p.name = n
+    p.age = a
+    p.sex = s
+}
+```
+
+### 示例
+
+```go
+type Person struct {
+    name string
+    age  int
+    sex  byte
+}
+
+p := Person{"张三", 20, 'm'}
+p.PrintInfo()              // 打印原始信息
+
+p.SetInfo("李四", 22, 'f') // 修改字段
+p.PrintInfo()              // 打印修改后信息
+```
+
+### 值接收者 vs 指针接收者
+
+| | 值接收者 `(t T)` | 指针接收者 `(t *T)` |
+|--|----------------|------------------|
+| **是否修改原数据** | 否（操作副本） | 是（操作原对象） |
+| **适用场景** | 只读操作 | 需要修改字段 |
+
 ### 从切片生成切片 & 底层数组关系
 
 **所有切片共享同一底层数组**，从切片再切片时，下标仍基于底层数组偏移：

@@ -1,0 +1,23 @@
+package main
+
+import "fmt"
+
+type Person struct {
+	name string
+	sex  byte
+	age  int
+}
+
+func (tmp *Person) PrintInfo() {
+	fmt.Printf("name=%s,sex=%c,age=%d\n", tmp.name, tmp.sex, tmp.age)
+}
+
+type Student struct {
+	Person
+	id int
+}
+
+func main() {
+	s := Student{Person{"张三", 'g', 19}, 1}
+	s.PrintInfo()
+}
