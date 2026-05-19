@@ -2854,6 +2854,96 @@ index:  0  1  2  3  4  5  6  7  8
 
 ---
 
+## 四十六、接口（interface）
+
+接口是一组方法声明的集合。只要某个类型实现了接口中的所有方法，就算实现该接口。
+
+```go
+type Humaner interface {
+    sayHi()
+}
+```
+
+### 1) 接口的多态
+
+同一个接口变量可以保存不同具体类型，只要它们都实现了接口方法。
+
+```go
+type Student struct {
+    name string
+    age  int
+}
+
+func (s *Student) sayHi() {
+    fmt.Println("student say hi", s)
+}
+
+type Teacher struct {
+    name    string
+    address string
+}
+
+func (t *Teacher) sayHi() {
+    fmt.Println("teacher say hi", t)
+}
+
+type MyStr string
+
+func (m *MyStr) sayHi() {
+    fmt.Printf("mystr say hi %s\n", *m)
+}
+
+func main() {
+    var i Humaner
+
+    s := &Student{"mike", 6}
+    i = s
+    i.sayHi()
+
+    t := &Teacher{"bj", "go"}
+    i = t
+    i.sayHi()
+
+    var str MyStr = "hello mike"
+    i = &str
+    i.sayHi()
+}
+```
+
+要点：
+- 接口变量本身不关心具体类型，只关心是否实现了接口方法。
+- 这里 `sayHi()` 都是指针接收者，因此赋值给接口时要传指针。
+
+### 2) 空接口 `interface{}`
+
+空接口没有任何方法，因此任意类型都实现了空接口。它可以保存任意类型的数据。
+
+```go
+func aaa(arg ...interface{}) {
+    // 可接收任意数量、任意类型参数
+}
+
+func main() {
+    var i interface{} = 1
+    fmt.Println("i=", i)
+
+    i = "abc"
+    fmt.Println("i=", i)
+}
+```
+
+要点：
+- `interface{}` 类似“通用容器”，可存放任意类型。
+- 常用于：不确定参数类型的函数、可变参数、通用数据结构。
+
+### 3) 总结
+
+- 普通接口：用于定义行为规范（方法集合）。
+- 空接口：用于接收任意类型值。
+- 接口是 Go 实现多态的核心机制之一。
+
+---
+
 ## 三十九、随机数
 
 ### 使用 math/rand 包
