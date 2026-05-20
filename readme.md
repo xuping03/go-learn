@@ -2981,5 +2981,173 @@ func main() {
 - **推荐种子**：`time.Now().UnixNano()`，以纳秒时间戳保证每次运行不同
 - `rand.Intn(100)` 生成 0~99 的随机数（不含100）
 
+---
 
+## 30. error 接口的使用
 
+### error 接口
+
+Go 中 `error` 是一个内置接口，任何实现了 `Error() string` 方法的类型都满足该接口。
+
+### 创建 error 的两种方式
+
+**方式一：`fmt.Errorf()`**
+
+```go
+err := fmt.Errorf("%s", "this is normal err1")
+fmt.Println("err=", err)
+```
+
+**方式二：`errors.New()`**
+
+```go
+import "errors"
+
+err := errors.New("分母不能为0")
+```
+
+### 错误处理示例
+
+```go
+func myDiv(a, b int) (result int, err error) {
+    err = nil
+    if b == 0 {
+        err = errors.New("分母不能为0")
+    } else {
+        result = a / b
+    }
+    return
+}
+
+func main() {
+    result, err := myDiv(1, 0)
+    if err != nil {
+        fmt.Println("err=", err)
+    } else {
+        fmt.Println("result=", result)
+    }
+}
+```
+
+### 关键点
+
+- 函数通常将 `error` 作为最后一个返回值
+- 调用方通过 `if err != nil` 判断是否出错
+- `fmt.Errorf` 支持格式化，`errors.New` 适合简单错误信息
+
+---
+
+## 31. panic 与 recover
+
+### panic
+
+`panic` 用于触发运行时错误（如数组越界、手动触发），程序会终止并打印堆栈信息。
+
+```go
+// 数组越界会自动触发 panic
+var a [10]int
+a[11] = 111 // panic: runtime error: index out of range
+```
+
+### recover
+
+`recover` 用于捕获 `panic`，**必须配合 `defer` 使用**，否则无效。
+
+```go
+func testa(x int) {
+    defer func() {
+        if err := recover(); err != nil {
+            fmt.Println(err)
+        }
+    }()
+    var a [10]int
+    if x < 0 || x >= len(a) {
+        panic("index out of range")
+    }
+    a[x] = 111
+}
+
+func main() {
+    testa(5)
+}
+```
+
+### 关键点
+
+- `recover()` 只在 `defer` 函数中有效
+- `recover()` 返回 `nil` 表示没有发生 panic
+- 捕获 panic 后程序可以继续运行，不会崩溃
+- 建议在 `recover` 前主动做边界检查，避免依赖 panic 作为控制流
+
+---
+
+## 32. 字符串操作
+
+### strings 包
+
+```go
+import "strings"
+
+// 是否包含子串
+strings.Contains("hellogo", "hello")   // true
+
+// 连接切片
+s := []string{"abc", "hello", "mike", "go"}
+strings.Join(s, "x")                   // "abcxhelloxmikexgo"
+
+// 查找子串位置（-1 表示不存在）
+strings.Index("helloabc", "abc")       // 5
+
+// 重复字符串
+strings.Repeat("go", 3)               // "gogogo"
+
+// 分割字符串
+strings.Split("hello@abc@go", "@")    // ["hello", "abc", "go"]
+
+// 去除首尾指定字符
+strings.Trim("  hello  ", " ")        // "hello"
+
+// 按空白符分割成单词切片
+strings.Fields("  are you ok")        // ["are", "you", "ok"]
+```
+
+### strconv 包（类型转换）
+
+```go
+import "strconv"
+
+// 整型 → 字符串（最常用）
+str := strconv.Itoa(6666)               // "6666"
+
+// 字符串 → 整型
+a, _ := strconv.Atoi("567")             // 567
+
+// 字符串 → bool
+flag, _ := strconv.ParseBool("true")    // true
+
+// 其他格式化转换
+strconv.FormatBool(false)               // "false"
+strconv.FormatFloat(3.14, 'f', -1, 64) // "3.14"
+
+// 向 []byte 追加转换后的值
+slice := make([]byte, 0, 1024)
+slice = strconv.AppendBool(slice, true)
+slice = strconv.AppendInt(slice, 1234, 10)
+slice = strconv.AppendQuote(slice, "hello")
+fmt.Println(string(slice)) // true1234"hello"
+```
+
+### 常用函数速查
+
+| 函数 | 说明 |
+|------|------|
+| `strings.Contains(s, sub)` | 是否包含子串 |
+| `strings.Join(slice, sep)` | 切片拼接为字符串 |
+| `strings.Split(s, sep)` | 字符串分割为切片 |
+| `strings.Index(s, sub)` | 子串首次出现位置 |
+| `strings.Repeat(s, n)` | 重复字符串 n 次 |
+| `strings.Trim(s, cutset)` | 去除首尾指定字符 |
+| `strings.Fields(s)` | 按空白符分割 |
+| `strconv.Itoa(n)` | int → string |
+| `strconv.Atoi(s)` | string → int |
+| `strconv.FormatFloat(f, fmt, prec, bitSize)` | float → string |
