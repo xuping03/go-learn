@@ -3151,3 +3151,220 @@ fmt.Println(string(slice)) // true1234"hello"
 | `strconv.Itoa(n)` | int → string |
 | `strconv.Atoi(s)` | string → int |
 | `strconv.FormatFloat(f, fmt, prec, bitSize)` | float → string |
+
+---
+
+## 33. 正则表达式
+
+### 基本匹配
+
+```go
+buf := "abc azc a7c aac 888 a9c tac"
+reg1 := regexp.MustCompile(`a.c`)
+re := reg1.FindAllStringSubmatch(buf, -1)
+fmt.Println("result=", re) // [abc azc a7c aac a9c]
+```
+
+- `.` 表示匹配任意单个字符
+- `FindAllStringSubmatch(..., -1)` 表示匹配全部结果
+
+### 数字小数匹配示例
+
+```go
+buf := "3.14 567 agsdg 1.23 7. 8.9 1sdljgl 6.66 7.8 "
+reg := regexp.MustCompile(`\d\.\d+`)
+re := reg.FindAllStringSubmatch(buf, -1)
+fmt.Println("re====", re) // [3.14 1.23 8.9 6.66 7.8]
+```
+
+- `\d` 表示数字
+- `\d+` 表示一个或多个数字
+- `\d\.\d+` 可用于提取形如 `x.xx` 的小数片段
+
+---
+
+## 34. JSON 结构体生成（结构体 -> JSON）
+
+### 结构体转 JSON
+
+```go
+type IT struct {
+    Company  string
+    Subjects []string
+    IsOK     bool
+    Price    float64
+}
+
+s := IT{"itcast", []string{"Go", "C++", "Python", "Test"}, true, 666.666}
+buf, _ := json.Marshal(s)
+fmt.Println(string(buf))
+```
+
+### 美化输出
+
+```go
+buf2, _ := json.MarshalIndent(s, "", " ")
+fmt.Println(string(buf2))
+```
+
+- 第二个参数是每行前缀（这里为空）
+- 第三个参数是层级缩进字符串（这里为一个空格）
+
+### 结构体字段标签（tag）
+
+```go
+type IT struct {
+    Company  string   `json:"-"`
+    Subjects []string `json:"subjects"`
+    IsOK     bool     `json:",string"`
+    Price    float64  `json:",string"`
+}
+```
+
+- `json:"-"`：字段不参与 JSON 编解码
+- `json:"subjects"`：指定 JSON 字段名
+- `json:",string"`：以字符串形式编码/解码
+
+### map 转 JSON
+
+```go
+m := make(map[string]interface{}, 4)
+m["c"] = "hh"
+m["s"] = []string{"Go", "C++", "python"}
+m["ok"] = true
+m["p"] = 55
+
+result, _ := json.Marshal(m)
+fmt.Println(string(result))
+```
+
+---
+
+## 35. JSON 生成结构体（JSON -> 结构体）
+
+### 反序列化示例
+
+```go
+type IT struct {
+    Company  string   `json:"-"`
+    Subjects []string `json:"subjects"`
+    IsOK     bool     `json:",string"`
+    Price    float64  `json:",string"`
+}
+
+jsonBuf := `
+{
+  "Company": "itcast",
+  "Subjects": ["Go", "C++", "Python", "Test"],
+  "IsOK": true,
+  "Price": 666.666
+}`
+
+var tmp IT
+json.Unmarshal([]byte(jsonBuf), &tmp)
+fmt.Printf("tmp=%+v\n", tmp)
+```
+
+### 关键点
+
+- 反序列化目标必须传指针：`&tmp`
+- 字段首字母必须大写，反射才能访问
+- tag 会影响 JSON 字段映射和编解码行为
+
+---
+
+## 36. 文件输入输出
+
+### 控制台输入
+
+```go
+fmt.Println("请输入a:")
+var a int
+fmt.Scan(&a)
+```
+
+### 按行读取文件（`bufio.Reader`）
+
+```go
+f, _ := os.Open(path)
+defer f.Close()
+r := bufio.NewReader(f)
+for {
+    buf, err := r.ReadBytes('\n')
+    if err != nil {
+        if err == io.EOF {
+            break
+        }
+    }
+    fmt.Println(string(buf))
+}
+```
+
+### 写文件 + 读文件
+
+```go
+f, err := os.Create(path)
+if err != nil {
+    return
+}
+defer f.Close()
+
+for i := 0; i < 10; i++ {
+    buf := fmt.Sprintf("i=%d\n", i)
+    f.WriteString(buf)
+}
+```
+
+```go
+f, _ := os.Open(path)
+defer f.Close()
+buf := make([]byte, 1024*2)
+n, _ := f.Read(buf)
+fmt.Println(string(buf[:n]))
+```
+
+### 文件拷贝（命令行参数）
+
+```go
+list := os.Args
+if len(list) != 3 {
+    fmt.Println("输入有误，用法: copyFile <源文件> <目标文件>")
+    return
+}
+
+srcFile := list[1]
+dstFile := list[2]
+if srcFile == dstFile {
+    fmt.Println("源文件和目的文件名字不能相同")
+    return
+}
+
+sf, err1 := os.Open(srcFile)
+if err1 != nil {
+    return
+}
+defer sf.Close()
+
+df, err2 := os.Create(dstFile)
+if err2 != nil {
+    return
+}
+defer df.Close()
+
+buf := make([]byte, 4*1024)
+for {
+    n, err := sf.Read(buf)
+    if err != nil {
+        if err == io.EOF {
+            break
+        }
+    }
+    df.Write(buf[:n])
+}
+```
+
+### 关键点
+
+- 命令行参数拷贝需传两个路径参数
+- 目标文件应使用 `os.Create(dstFile)`，不要覆盖源文件
+- 处理 `io.EOF` 作为读取结束条件
